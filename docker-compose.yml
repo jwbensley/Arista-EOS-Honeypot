@@ -1,0 +1,88 @@
+---
+networks:
+  mgmt:
+    driver: bridge
+    # enable_ipv6: false
+    # ipam:
+    #   config:
+    #     - subnet: 10.47.218.0/24
+    #       gateway: 10.47.218.1
+    #     - subnet: fd:10:47:218::/64
+    #       gateway: fd:10:47:218::1
+  eth1:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 10.214.33.0/24
+          gateway: 10.214.33.1
+        - subnet: fd:10:214:33::/64
+          gateway: fd:10:214:33::1
+  eth2:
+    driver: bridge
+    enable_ipv6: false
+    # ipam:
+    #   config:
+    #     - subnet: 10.214.34.0/24
+    #       gateway: 10.214.34.1
+    #     - subnet: fd:10:214:34::/64
+    #       gateway: fd:10:214:34::1
+services:
+  eos_honeypot:
+    image: ceos:4.31.2F
+    container_name: eos_honeypot
+    privileged: true
+    tty: true
+    networks:
+      mgmt:
+        interface_name: eth0
+      eth1:
+        interface_name: eth1
+      eth2:
+        interface_name: eth2
+    ports:
+      - "22:22"
+      - "23:23"
+    volumes:
+      - ./rc.local:/etc/rc.local:ro
+      - ./init.sh:/init.sh:ro
+      - ./base.cfg:/base.cfg:ro
+      - ./bashrc:/etc/bashrc:ro
+      - ./VersionModel.py:/usr/lib/python3.9/site-packages/CliPlugin/VersionModel.py:ro
+      - eos_logs:/var/log:rw
+      - eos_flash:/mnt/flash:rw
+    restart: always
+    environment:
+      - INTFTYPE=eth
+      - ETBA=1
+      - SKIP_ZEROTOUCH_BARRIER_IN_SYSDBINIT=1
+      - CEOS=1
+      - EOS_PLATFORM=ceoslab
+      - container=docker
+      - MAPETH0=1
+      - MGMT_INTF=eth0
+    entrypoint:
+      - /sbin/init
+      - systemd.setenv=INTFTYPE=eth
+      - systemd.setenv=ETBA=1
+      - systemd.setenv=SKIP_ZEROTOUCH_BARRIER_IN_SYSDBINIT=1
+      - systemd.setenv=CEOS=1
+      - systemd.setenv=EOS_PLATFORM=ceoslab
+      - systemd.setenv=container=docker
+      - systemd.setenv=MAPETH0=1
+      - systemd.setenv=MGMT_INTF=eth0
+  log_copier:
+    image: busybox:1.36
+    container_name: log_copier
+    depends_on:
+      - eos_honeypot
+    volumes:
+      - ./copy_logs.sh:/copy_logs.sh:ro
+      - eos_logs:/eos_logs:ro
+      - eos_flash:/eos_flash:ro
+      - ./logs:/logs:rw
+    entrypoint: /copy_logs.sh
+    restart: always
+volumes:
+  eos_logs:
+  eos_flash:
