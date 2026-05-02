@@ -44,11 +44,11 @@ services:
       - "22:22"
       - "23:23"
     volumes:
-      - ./rc.local:/etc/rc.local:ro
-      - ./init.sh:/init.sh:ro
-      - ./base.cfg:/base.cfg:ro
-      - ./bashrc:/etc/bashrc:ro
-      - ./VersionModel.py:/usr/lib/python3.9/site-packages/CliPlugin/VersionModel.py:ro
+      - ./init/rc.local:/etc/rc.local:ro
+      - ./init/init.sh:/init.sh:ro
+      - ./init/base.cfg:/base.cfg:ro
+      - ./init/bashrc:/etc/bashrc:ro
+      - ./init/VersionModel.py:/usr/lib/python3.9/site-packages/CliPlugin/VersionModel.py:ro
       - eos_logs:/var/log:rw
       - eos_flash:/mnt/flash:rw
     restart: always
