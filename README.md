@@ -2,25 +2,44 @@
 
 This repo contains an Arista EOS based honeypot.
 
+## Design
+
 * A Docker container is used to run cEOS, which is a containerized version of EOS.
-* The container is configured to automatically apply a base configuration on first boot, and log all commands.
+* The container is configured to automatically apply a base configuration on first boot.
 * The EOS device is configured with SSH and Telnet enabled, with a default username and password of `admin`/`admin`.
 * The output of the "show version" command is modified to make it look my like a physical device and not like cEOS.
+* All commands executed on the EOS CLI and in the BASH shell are logged and periodically copied to the host machine.
+* Add the following to `/etc/crontab` on the host machine to reset the containers periodically:
 
-## Base Configuration
+```cron
+# m h dom mon dow user command
+0 10 * * * root /path/to/eos_honeypot/reset_containers.sh
+```
+
+## Configuration
+
+### Startup Config Configuration
 
 * A custom [`rc.local`](./init/rc.local) script is mounted which in turn calls [`init.sh`](./init/init.sh).
 * [`init.sh`](./init/init.sh) applies the base EOS configuration ([`base.cfg`](./init/base.cfg)) but only if it hasn't been applied before.
 * The base config is applied using the `Cli` command, meaning it is applied interactively. An alternative method would be to put the required config in the `startup-config` file, but one time commands like those needed for generating the self-signed cert for eAPI don't work when applied via the `startup-config`.
 
-## Logging
+### Logging Configuration
 
 * The [`bashrc`](./init/bashrc) file is one copied from EOS and `export PROMPT_COMMAND` is added at the end to export all bash commands to syslog.
 * All BASH commands are written to /var/log/messages (and also /var/log/secure of course, but now we have EOS commands _and_ BASH commands in the same log file).
 * A separate container is used to copy the logs from the EOS container to the host machine periodically. This is because mounting a host directory directly to /var/log and /mnt/flash doesn't seem to work with cEOS. Also this means there isn't a rw mount between host and the EOS container which may be better from a security perspective. Instead a shared ro volume is used to access the logs from the second container, and the logs are copied to the host machine from there.
 * EOS generates tech-support dumps periodically, and these are also copied to the host machine by the second container.
 
-## Running cEOS
+### Connectivity Configuration
+
+The host machine needs to have TCP ports 22 and 23 available for use by the EOS container.
+
+Container traffic will be NAT masqueraded to the host machine IP address (standard docker behaviour), meaning that the EOS container can reach out to the public Internet using the host machines connectivity, equally, SSH and Telnet access to the EOS container will be via the host machine IP address.
+
+## Operations
+
+### Running cEOS
 
 Start the containers:
 
@@ -46,13 +65,7 @@ Remove the containers:
 docker compose down
 ```
 
-## Connectivity
-
-The host machine needs to have TCP ports 22 and 23 available for use by the EOS container.
-
-Container traffic will be NAT masqueraded to the host machine IP address (standard docker behaviour), meaning that the EOS container can reach out to the public Internet using the host machines connectivity, equally, SSH and Telnet access to the EOS container will be via the host machine IP address.
-
-## Interacting with cEOS
+### Connecting to cEOS
 
 When booting the EOS container for the first time the bootstrap configuration needs to be applied (to set an IPv4/v6 address, enable SSH + Telnet, and generate a self-signed cert for eAPI), otherwise the container won't be remotely reachable. This is done automatically.
 
