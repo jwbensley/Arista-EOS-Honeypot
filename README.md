@@ -16,6 +16,12 @@ This repo contains an Arista EOS based honeypot.
 0 10 * * * root /path/to/eos_honeypot/reset_containers.sh
 ```
 
+You need to ensure you have a copy of the cEOS container on your host machine, which can be obtained from the Arista support portal.
+
+```shell
+docker import cEOS64-lab-4.36.0.1F.tar.tar ceos:4.36.0.1F
+```
+
 ## Configuration
 
 ### Startup Config Configuration
