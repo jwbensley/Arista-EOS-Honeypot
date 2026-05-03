@@ -37,6 +37,29 @@ The host machine needs to have TCP ports 22 and 23 available for use by the EOS 
 
 Container traffic will be NAT masqueraded to the host machine IP address (standard docker behaviour), meaning that the EOS container can reach out to the public Internet using the host machines connectivity, equally, SSH and Telnet access to the EOS container will be via the host machine IP address.
 
+The default SSH options allow a lot of connectivity, don't need to increase these for a honeypot:
+
+```text
+(config-mgmt-ssh)#show active all 
+management ssh
+   idle-timeout 0
+   ...
+   connection limit 50
+   connection per-host 20
+```
+
+The default Telnet options allow the maximum number of simultaneous connections with no idle timeout:
+
+```text
+(config-mgmt-telnet)#show active all 
+management telnet
+   idle-timeout 0
+   session-limit 20
+   session-limit per-host 20
+```
+
+An ACL is configured for SSH and Telnet access, but a typo is intentionally made so that the ACL isn't applied, but it looks like someone tried to secure access.
+
 ## Operations
 
 ### Running cEOS
@@ -74,6 +97,7 @@ After this EOS should be locally reachable on the host machine via SSH by using 
 ```shell
 ssh admin@10.214.33.2
 ssh admin@fd:10:214:33::2
+ssh-keygen -f "${HOME}/.ssh/known_hosts" -R "10.214.33.2" && ssh -o StrictHostKeyChecking=no admin@10.214.33.2
 ```
 
 The password is `admin`.
@@ -84,7 +108,7 @@ Alternatively, EOS should also be reachable via the eAPI (using a self-signed ce
 
 This is not currently exposed in the docker-compose file, meaning the public Internet can't reach the eAPI, but the host machine will be able to reach the eAPI.
 
-To programmatically check if the container is operational, try to get the device hostname via the API. Once the bootstrap config has been automatically applied during start up the device should return the hostname `arista_eos`.
+To programmatically check if the container is operational, try to get the device hostname via the API. Once the bootstrap config has been automatically applied during start up the device should return the hostname.
 
 Example run locally:
 
@@ -103,5 +127,5 @@ https://admin:admin@10.214.33.2:443/command-api \
 | jq '."result"[0]."hostname"'
 
 # Response:
-"arista_eos"
+"edge_rtr_001"
 ```
