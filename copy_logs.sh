@@ -1,5 +1,9 @@
 #!/bin/sh
 
+set -eu
+
+DURATION=$1
+
 copy_file() {
     if [ -f "$1" ]; then
         cp "$1" "$2"
@@ -9,6 +13,8 @@ copy_file() {
         echo "$(date): File $1 does not exist, skipping."
     fi
 }
+
+sleep $DURATION
 
 while true
 do
@@ -30,5 +36,10 @@ do
     chmod a+rw /logs/*
 
     echo "Finished log copy at $(date)"
-    sleep 3600
+
+    # Use zero to allow for one-time copy
+    if [ $DURATION -eq 0 ]; then
+        exit 0
+    fi
+    sleep $DURATION
 done

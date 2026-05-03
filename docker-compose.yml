@@ -73,7 +73,7 @@ networks:
     driver: bridge
 services:
   eos_honeypot:
-    image: ceos:4.31.2F
+    image: ceos:4.36.0.1F
     container_name: eos_honeypot
     privileged: true
     tty: true
@@ -172,7 +172,7 @@ services:
       - eos_logs:/eos_logs:ro
       - eos_flash:/eos_flash:ro
       - ./logs:/logs:rw
-    entrypoint: /copy_logs.sh
+    entrypoint: [ "/copy_logs.sh", "1800" ]
     restart: always
 volumes:
   eos_logs:
