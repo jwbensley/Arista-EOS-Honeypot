@@ -2,13 +2,13 @@
 networks:
   mgmt:
     driver: bridge
-    # enable_ipv6: false
-    # ipam:
-    #   config:
-    #     - subnet: 10.47.218.0/24
-    #       gateway: 10.47.218.1
-    #     - subnet: fd:10:47:218::/64
-    #       gateway: fd:10:47:218::1
+  # enable_ipv6: false
+  # ipam:
+  #   config:
+  #     - subnet: 10.47.218.0/24
+  #       gateway: 10.47.218.1
+  #     - subnet: fd:10:47:218::/64
+  #       gateway: fd:10:47:218::1
   eth1:
     driver: bridge
     enable_ipv6: true
@@ -20,13 +20,57 @@ networks:
           gateway: fd:10:214:33::1
   eth2:
     driver: bridge
-    enable_ipv6: false
-    # ipam:
-    #   config:
-    #     - subnet: 10.214.34.0/24
-    #       gateway: 10.214.34.1
-    #     - subnet: fd:10:214:34::/64
-    #       gateway: fd:10:214:34::1
+  #   enable_ipv6: false
+  # ipam:
+  #   config:
+  #     - subnet: 10.214.34.0/24
+  #       gateway: 10.214.34.1
+  #     - subnet: fd:10:214:34::/64
+  #       gateway: fd:10:214:34::1
+  eth3:
+    driver: bridge
+  eth4:
+    driver: bridge
+  eth5:
+    driver: bridge
+  eth6:
+    driver: bridge
+  eth7:
+    driver: bridge
+  eth8:
+    driver: bridge
+  eth9:
+    driver: bridge
+  eth10:
+    driver: bridge
+  eth11:
+    driver: bridge
+  eth12:
+    driver: bridge
+  eth13:
+    driver: bridge
+  eth14:
+    driver: bridge
+  eth15:
+    driver: bridge
+  eth16:
+    driver: bridge
+  eth17:
+    driver: bridge
+  eth18:
+    driver: bridge
+  eth19:
+    driver: bridge
+  eth20:
+    driver: bridge
+  eth21:
+    driver: bridge
+  eth22:
+    driver: bridge
+  eth23:
+    driver: bridge
+  eth24:
+    driver: bridge
 services:
   eos_honeypot:
     image: ceos:4.31.2F
@@ -34,12 +78,59 @@ services:
     privileged: true
     tty: true
     networks:
+      # Create 24 interfaces and map each interface to a different network.
+      # Specifically we map eth1 to a specific network, for remote connectivity.
+      # Otherwise mapping happens in a random order.
       mgmt:
         interface_name: eth0
       eth1:
         interface_name: eth1
       eth2:
         interface_name: eth2
+      eth3:
+        interface_name: eth3
+      eth4:
+        interface_name: eth4
+      eth5:
+        interface_name: eth5
+      eth6:
+        interface_name: eth6
+      eth7:
+        interface_name: eth7
+      eth8:
+        interface_name: eth8
+      eth9:
+        interface_name: eth9
+      eth10:
+        interface_name: eth10
+      eth11:
+        interface_name: eth11
+      eth12:
+        interface_name: eth12
+      eth13:
+        interface_name: eth13
+      eth14:
+        interface_name: eth14
+      eth15:
+        interface_name: eth15
+      eth16:
+        interface_name: eth16
+      eth17:
+        interface_name: eth17
+      eth18:
+        interface_name: eth18
+      eth19:
+        interface_name: eth19
+      eth20:
+        interface_name: eth20
+      eth21:
+        interface_name: eth21
+      eth22:
+        interface_name: eth22
+      eth23:
+        interface_name: eth23
+      eth24:
+        interface_name: eth24
     ports:
       - "22:22"
       - "23:23"
