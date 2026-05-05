@@ -172,7 +172,7 @@ services:
       - eos_logs:/eos_logs:ro
       - eos_flash:/eos_flash:ro
       - ./logs:/logs:rw
-    entrypoint: [ "/copy_logs.sh", "1800" ]
+    entrypoint: [ "/copy_logs.sh", "36000" ] # 10 hours
     restart: always
 volumes:
   eos_logs:
