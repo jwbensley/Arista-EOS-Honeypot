@@ -9,7 +9,8 @@ import logging
 import re
 import socket
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional
+
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,14 @@ class SessionCommand:
 
     def __repr__(self):
         return f"SessionCommand(timestamp={self.timestamp}, command={self.command!r})"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, SessionCommand):
+            return NotImplemented
+        return self.command == other.command
+
+    def __hash__(self):
+        return hash(self.command)
 
 
 class SessionCommands:
@@ -42,6 +51,9 @@ class SessionCommands:
     def get_commands(self) -> list[SessionCommand]:
         """Get the list of commands executed during the session, in chronological order."""
         return sorted(self.commands, key=lambda c: c.timestamp)
+
+    def __iter__(self):
+        return iter(self.commands)
 
     def __repr__(self):
         return f"SessionCommands(count={len(self.commands)})"
@@ -96,6 +108,10 @@ class UserSession:
 
     def __repr__(self):
         return f"UserSession(connect_time={self.connect_time}, protocol={self.protocol.name}, client={self.client}, pid={self.pid}, auth_success={self.auth_success}, commands={len(self.commands.commands)})"
+
+    def add_command(self, command: SessionCommand):
+        """Add a command to the session."""
+        self.commands.add_command(command)
 
 
 class UserSessions:
@@ -164,6 +180,9 @@ class UserSessions:
             return None
 
         return sorted(candidates, key=lambda s: s.connect_time, reverse=True)[0]
+
+    def __iter__(self):
+        return iter(self.sessions)
 
     def __repr__(self):
         return f"UserSessions(count={len(self.sessions)})"
@@ -275,16 +294,27 @@ def parse_log_files(filepaths: list[str]) -> None:
     """Parse a gzip-compressed log files"""
     logger.info(f"Starting to parse {len(filepaths)} log files")
 
-    for filepath in filepaths:
-        user_sessions, clients = parse_log_file(filepath)
-        print_stats(user_sessions, clients)
-
-
-def parse_log_file(filepath: str) -> Tuple[UserSessions, Clients]:
-    logger.info("Parsing log file: %s", filepath)
-
+    unique_commands: set[SessionCommand] = set()
     user_sessions = UserSessions()
     clients = Clients()
+
+    for filepath in filepaths:
+        parse_log_file(filepath, user_sessions, clients, unique_commands)
+
+    print_session_stats(user_sessions, clients)
+
+    logger.info(f"Found {len(unique_commands)} unique commands")
+    for command in sorted(unique_commands, key=lambda c: c.timestamp):
+        print(command)
+
+
+def parse_log_file(
+    filepath: str,
+    user_sessions: UserSessions,
+    clients: Clients,
+    unique_commands: set[SessionCommand],
+) -> None:
+    logger.info("Parsing log file: %s", filepath)
 
     START_RE = re.compile(
         r"^(?P<ts>\d{4}\s+\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})\s+UTC\s+\S+\s+xinetd\[\d+\]:\s+START:\s+(?P<proto>ssh|telnet)\s+pid=(?P<pid>\d+)\s+from=(?P<ip>\S+)"
@@ -325,7 +355,7 @@ def parse_log_file(filepath: str) -> Tuple[UserSessions, Clients]:
         The PID is not known for this log entry.
         Create a new session with connect_error set to "Session Limit Reached" for the session, connect_time="2026 May  3 23:18:00", disconnect_time="2026 May  3 23:18:00", protocol=TELNET, client_ip="202.91.32.11"
         2026 May  3 23:18:00 UTC edge_rtr_001.ariosnetworks.net xinetd[341]: FAIL: telnet service_limit from=::ffff:202.91.32.11
-messages.20260510-200028.gz
+
         A session couldn't be create because there was an error during the connection process.
         The client IP is not known for this log entry.
         Set the connect_error to "Session Limit Reached" for the session with connect_time="2026 Jun 17 00:57:50", protocol=TELNET, pid=12782.
@@ -501,10 +531,10 @@ messages.20260510-200028.gz
                     )
 
                     if session is not None:
-                        session.commands.add_command(
-                            SessionCommand(command=cmd, timestamp=ts)
-                        )
+                        session_command = SessionCommand(command=cmd, timestamp=ts)
+                        session.add_command(session_command)
                         logger.debug("Added command to session: %s", session)
+                        unique_commands.add(session_command)
                     else:
                         logger.error(
                             "No matching authenticated session found for CMD line:\n%s",
@@ -523,10 +553,8 @@ messages.20260510-200028.gz
         len(clients),
     )
 
-    return user_sessions, clients
 
-
-def print_stats(user_sessions: UserSessions, clients: Clients):
+def print_session_stats(user_sessions: UserSessions, clients: Clients):
     successful_auths = sum(1 for s in user_sessions.sessions if s.auth_success)
     failed_auths = len(user_sessions) - successful_auths
     connected_sessions = sum(

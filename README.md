@@ -135,3 +135,23 @@ https://admin:admin@10.214.33.2:443/command-api \
 # Response:
 "edge_rtr_001"
 ```
+
+### Logs
+
+Tail live log:
+
+```text
+alias eos_tail="ssh-keygen -f ~/.ssh/known_hosts -R $EOS_HONEYPOT_IPV4 && ssh -o StrictHostKeyChecking=no admin@$EOS_HONEYPOT_IPV4 bash tail -fn +1 /var/log/messages | grep -v -E '(EXIT|START|FAIL): (ssh|telnet)|ttloop:'"
+```
+
+Pull log files:
+
+```text
+rsync -vh --progress -e "ssh -p 58585" bensley@$EOS_HONEYPOT_IPV4:~/Arista-EOS-Honeypot/logs/messages*.gz ./logs
+```
+
+Parse logs:
+
+```text
+./parse_messages.py logs/messages*.gz
+```
